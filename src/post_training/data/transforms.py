@@ -555,3 +555,28 @@ def helpsteer3_principle(example: dict[str, Any]) -> dict[str, Any]:
             {"role": "assistant", "content": example["response"]},
         ]
     }
+
+
+@register_transform("strip_to_role_content")
+def strip_to_role_content(example: dict[str, Any]) -> dict[str, Any]:
+    """Keep only role/content so datasets with different message fields can be mixed."""
+    return {"messages": [{"role": m["role"], "content": m["content"]} for m in example["messages"]]}
+
+
+@register_transform("euroblocks")
+def euroblocks(example: dict[str, Any]) -> dict[str, Any]:
+    """utter-project/EuroBlocks-SFT-Synthetic-1124: conversations[from/value] -> messages.
+
+    Its own `messages` column is a float (turn count) and is discarded.
+    """
+    role_map = {"human": "user", "gpt": "assistant", "system": "system"}
+    messages: list[dict[str, str]] = []
+    for turn in example["conversations"]:
+        role = role_map.get(turn["from"])
+        if role is None:  # unknown role -> empty row, dropped by the SFT filter
+            return {"messages": []}
+        if messages and messages[-1]["role"] == role:
+            messages[-1]["content"] += "\n" + turn["value"]
+        else:
+            messages.append({"role": role, "content": turn["value"]})
+    return {"messages": messages}

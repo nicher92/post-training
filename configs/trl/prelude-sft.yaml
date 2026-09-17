@@ -8,9 +8,10 @@ offline: false
 container:
   image: /scratch/project_465002530/containers/post-training-rocm7.2.4-py3.12-torch2.9.1-trl1.7.0-olmo-patched.sif
   bind_mounts:
-    - /pfs/lustrep3/scratch/project_465002530/users/krishnak/post-training/ # replace with your own path to the post-training repo
+    - /scratch/project_465002530
+    - /pfs/lustrep3/scratch/project_465002530
   path: /opt/venv/bin:/opt/rocm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-  env_file: env/lumi.env # make sure you have this file in the post-training repo, or change to your own env file
+  env_file: env/lumi.env
 
 # -- Model -------------------------------------------------------------------
 model:
@@ -49,15 +50,30 @@ checkpointing:
 
 # -- Data mix ----------------------------------------------------------------
 data:
-  chat_template: qwen3                       # Name from chat template registry
-  num_proc: 32                               # null = auto-detect, capped at 32
+  chat_template: qwen3
+  num_proc: 32
   datasets:
-    - name: "dolci-instruct-sft"
-      path: "allenai/Dolci-Instruct-SFT"     # HuggingFace dataset path
-      split: "train"
-      weight: 1.0
-      transform: null                        # null = already conversational
-
+  - name: dolci-instruct-sft
+    path: allenai/Dolci-Instruct-SFT
+    data_dir: null
+    subset: null
+    split: train
+    weight: 1.0
+    transform: null
+  - name: euroblocks-synthetic-sft
+    path: utter-project/EuroBlocks-SFT-Synthetic-1124
+    data_dir: null
+    subset: null
+    split: train
+    weight: 1.0
+    transform: euroblocks
+  - name: nemotron-pt-math
+    path: /scratch/project_465002530/users/niclhert/datasets/nemotron-v2-math
+    data_dir: null
+    subset: null
+    split: math
+    weight: 1.0
+    transform: strip_to_role_content
 # -- DeepSpeed ---------------------------------------------------------------
 deepspeed:
   bf16:
@@ -117,5 +133,5 @@ debug:
 
 # -- Output paths -------------------------------------------------------------
 paths:
-  output_base: "outputs"
-  debug_base: "outputs/debug"
+  output_base: "/scratch/project_465002530/users/niclhert/outputs"
+  debug_base: "/scratch/project_465002530/users/niclhert/outputs/debug"

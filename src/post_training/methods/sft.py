@@ -104,6 +104,8 @@ MESSAGES_FEATURES = Features(
             {
                 "content": Value("string"),
                 "role": Value("string"),
+                "functions": Value("string"),
+                "function_calls": Value("string"),
             }
         ),
         # A JSON string, matching what TRL reads: it does
