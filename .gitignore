@@ -32,4 +32,4 @@ scripts/playground.ipynb
 core.*
 
 # Data files
-data/**/*.jsonl
+data/**/*.jsonlenv/lumi.env

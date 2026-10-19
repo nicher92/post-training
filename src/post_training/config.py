@@ -96,7 +96,7 @@ class TrainingConfig:
     num_train_epochs: float | None = None
     num_training_samples: int | None = None
     num_training_tokens: int | None = None
-
+    ddp_timeout: int = 1800
     learning_rate: float = 2.0e-5
     effective_batch_size: int = 512
     per_device_train_batch_size: int = 4
@@ -146,6 +146,18 @@ class SFTMethodConfig:
     # Dropping is never silent: it changes the realised mixture, because
     # data.datasets[].weight applies to the rows that survive filtering.
     truncated_span_action: str = "warn"
+
+    # Path to a dataset already tokenized, label-built and packed by
+    # scripts/prepare_dataset.py. When set, TRL skips preparation entirely.
+    #
+    # This exists because TRL prepares the dataset inside `main_process_first`:
+    # rank 0 works while the other ranks wait at the first collective. At 7.4M
+    # rows that is ~6.5 hours against a 30-minute process-group timeout, and the
+    # timeout cannot be raised from TrainingArguments -- with
+    # `accelerate launch --use_deepspeed` the group is created before
+    # TrainingArguments is read, which is why the reported Timeout(ms) stays at
+    # 1800000 however `training.ddp_timeout` is set.
+    prepared_dataset_path: str | None = None
 
 
 @dataclass

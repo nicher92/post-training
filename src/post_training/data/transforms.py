@@ -560,7 +560,10 @@ def helpsteer3_principle(example: dict[str, Any]) -> dict[str, Any]:
 @register_transform("strip_to_role_content")
 def strip_to_role_content(example: dict[str, Any]) -> dict[str, Any]:
     """Keep only role/content so datasets with different message fields can be mixed."""
-    return {"messages": [{"role": m["role"], "content": m["content"]} for m in example["messages"]]}
+    return {
+        "messages": [{"role": m["role"], "content": m["content"]} for m in example["messages"]],
+        "tools": None,
+    }
 
 
 @register_transform("euroblocks")
@@ -574,9 +577,25 @@ def euroblocks(example: dict[str, Any]) -> dict[str, Any]:
     for turn in example["conversations"]:
         role = role_map.get(turn["from"])
         if role is None:  # unknown role -> empty row, dropped by the SFT filter
-            return {"messages": []}
+            return {"messages": [], "tools": None}
         if messages and messages[-1]["role"] == role:
             messages[-1]["content"] += "\n" + turn["value"]
         else:
             messages.append({"role": role, "content": turn["value"]})
-    return {"messages": messages}
+    return {"messages": messages, "tools": None}
+
+
+@register_transform("dolci_think_translated")
+def dolci_think_translated(example: dict[str, Any]) -> dict[str, Any]:
+    """Dolci-Think-SFT-translated: keep rows passing the translation quality
+    filter; emit an empty conversation otherwise so the SFT filter drops it.
+
+    The rejects are mostly `truncated`: reasoning traces that hit the
+    generation cap, leaving an unterminated <think> block.
+    """
+    if not example.get("filter_pass"):
+        return {"messages": [], "tools": None}
+    return {
+        "messages": [{"role": m["role"], "content": m["content"]} for m in example["messages"]],
+        "tools": None,
+    }

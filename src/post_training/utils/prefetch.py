@@ -18,7 +18,6 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from datasets import load_dataset
 from huggingface_hub import snapshot_download
 
 if TYPE_CHECKING:
@@ -114,12 +113,7 @@ def _prefetch_dataset(entry: DatasetEntry) -> None:
         logger.info("Dataset '%s' is a local path, skipping download.", entry.name)
         return
     logger.info("Downloading dataset '%s' ('%s') to HF cache...", entry.name, entry.path)
-    load_kwargs: dict = {}
-    if entry.data_dir is not None:
-        load_kwargs["data_dir"] = entry.data_dir
-    if entry.subset is not None:
-        load_kwargs["name"] = entry.subset
-    load_dataset(entry.path, split=entry.split, **load_kwargs)
+    snapshot_download(repo_id=entry.path, repo_type="dataset")
     logger.info("Dataset '%s' cached.", entry.name)
 
 

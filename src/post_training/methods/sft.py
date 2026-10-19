@@ -362,6 +362,30 @@ def build_sft_trainer(config: PostTrainingConfig, run_dir: Path) -> SFTTrainer:
             features=MESSAGES_FEATURES,
         )
 
+    # A dataset prepared by scripts/prepare_dataset.py is already tokenized,
+    # label-built and packed, so TRL must not touch it again -- and more to the
+    # point, must not spend six hours doing so while 31 ranks wait at a barrier
+    # with a 30-minute timeout.
+    prepared_path = mc.prepared_dataset_path
+    use_prepared = bool(prepared_path) and Path(prepared_path).exists()
+    if prepared_path and not use_prepared:
+        raise FileNotFoundError(
+            f"sft.prepared_dataset_path='{prepared_path}' does not exist. "
+            "Run scripts/prepare_dataset.py first, or unset the field to "
+            "prepare inline."
+        )
+    if use_prepared:
+        from datasets import load_from_disk
+
+        dataset = load_from_disk(prepared_path)
+        logger.info(
+            "Loaded prepared dataset from %s: %d rows, columns %s. "
+            "Skipping tokenization and packing.",
+            prepared_path,
+            len(dataset),
+            dataset.column_names,
+        )
+
     sft_config = SFTConfig(
         **build_common_training_kwargs(config, run_dir),
         max_length=mc.max_seq_length,
@@ -371,7 +395,11 @@ def build_sft_trainer(config: PostTrainingConfig, run_dir: Path) -> SFTTrainer:
         # Mask loss on everything except the assistant content.  Requires the
         # chat template to wrap assistant turns in {% generation %}…{% endgeneration %}.
         # Without this, SFTTrainer trains on user + system tokens too.
+        # Both this and `packing` were already applied by prepare_dataset.py
+        # when a prepared dataset is used; they stay set so the frozen config
+        # still records what the data was built with.
         assistant_only_loss=True,
+        dataset_kwargs={"skip_prepare_dataset": True} if use_prepared else None,
     )
 
     trainer = SFTTrainer(

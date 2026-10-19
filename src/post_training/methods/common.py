@@ -189,6 +189,7 @@ def build_common_training_kwargs(
         adam_beta1=t.adam_beta1,
         adam_beta2=t.adam_beta2,
         weight_decay=t.weight_decay,
+        ddp_timeout=t.ddp_timeout,
         adam_epsilon=t.adam_epsilon,
         gradient_accumulation_steps=grad_accum,
         warmup_steps=t.warmup_steps,
