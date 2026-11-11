@@ -40,7 +40,7 @@ model:
   tokenizer_revision: qwen3-tokens   # == 94bae05cf351c4feb435d6a73c2aa8edfd88ae04
 
 training:
-  num_train_epochs: 2
+  num_train_epochs: 1   # v0.2 used 2; halved for the ratio sweep
   learning_rate: 8.0e-5
   effective_batch_size: 32
   per_device_train_batch_size: 1
