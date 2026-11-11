@@ -18,6 +18,7 @@ from post_training.chat_templates.registry import has_generation_markers
 from post_training.data.loader import load_and_mix_datasets
 from post_training.methods.common import (
     align_generation_eos,
+    bind_inference_checkpoint_callback,
     build_callbacks,
     build_common_training_kwargs,
     build_model_init_kwargs,
@@ -104,8 +105,16 @@ MESSAGES_FEATURES = Features(
             {
                 "content": Value("string"),
                 "role": Value("string"),
-                "functions": Value("string"),
-                "function_calls": Value("string"),
+                # OpenAI-style calls. `arguments` is a JSON string, which the
+                # chat template inserts verbatim; it avoids declaring each
+                # tool's argument schema. datasets fills it with null for
+                # messages that have no calls.
+                "tool_calls": List(
+                    {
+                        "type": Value("string"),
+                        "function": {"name": Value("string"), "arguments": Value("string")},
+                    }
+                ),
             }
         ),
         # A JSON string, matching what TRL reads: it does
@@ -413,4 +422,5 @@ def build_sft_trainer(config: PostTrainingConfig, run_dir: Path) -> SFTTrainer:
     sanitize_generation_config(trainer)
     align_generation_eos(trainer)
     prioritize_metric_callbacks(trainer)
+    bind_inference_checkpoint_callback(trainer)
     return trainer
